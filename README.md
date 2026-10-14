@@ -90,115 +90,29 @@ A1: Fixed window → A2: Multi-scale → A3: Patient adaptive
 
 ---
 
-## 论文1：GRU-D — 处理缺失数据的循环神经网络
+## 论文精讲
 
-**论文**：*Recurrent Neural Networks for Multivariate Timeseries with Missing Values*, Scientific Reports, 2018
+每篇论文都有独立的详细分析文档（含原文图例、框架解析、与我们研究的关联）：
 
-**核心问题**：临床时序数据大量缺失，传统方法（均值填充、前向填充）会引入偏差。
+| # | 论文 | 核心主题 | 详细分析 |
+|---|------|---------|---------|
+| 01 | Autoregressive EHR Foundation Models | 自回归 EHR 基础模型 + 多模态 | [分析](papers/01_autoregressive_ehr_foundation_models_analysis.md) |
+| 02 | M2G-LLM | GNN + LLM 对齐 + 残差注入 | [分析](papers/02_m2g_llm_analysis.md) |
+| 03 | GDP (Generative Deep Patient) | 多模态生成式患者模型 | [分析](papers/03_gdp_multimodal_generative_model_analysis.md) |
+| 04 | Unified Multimodal Learners | LLM 统一多模态学习 | [分析](papers/04_unified_multimodal_learners_analysis.md) |
+| 07 | KAMELEON | 知识增强的多模态 EHR 预测 | [分析](papers/07_kameleON_analysis.md) |
+| 08 | Fusion is not one-size-fits-all | 多模态融合策略研究 | [分析](papers/08_fusion_analysis.md) |
+| 11 | Optical Compression | 光学压缩多模态临床数据 | [分析](papers/11_optical_compression_analysis.md) |
+| 12 | RL over Patient Trajectories | 强化学习患者轨迹建模 | [分析](papers/12_rl_trajectories_analysis.md) |
+| 13 | EHRWorld | EHR 知识图谱世界模型 | [分析](papers/13_ehrworld_analysis.md) |
+| 14 | Computable Longitudinal Journeys | 可计算纵向患者旅程 | [分析](papers/14_longitudinal_journeys_analysis.md) |
+| - | LLM4EHR | LLM 零样本临床预测 | [分析](papers/LLM4EHR_analysis.md) |
 
-**GRU-D 的核心创新：衰减机制（Decay）**
+### 经典 Baseline 论文
 
-两种衰减：
-1. **输入衰减**：观测值随时间衰减趋向均值
-2. **隐藏状态衰减**：隐藏状态随时间衰减趋向默认值
+**GRU-D**（2018, Scientific Reports）：处理缺失数据的循环神经网络，核心创新是**衰减机制（Decay）**——输入和隐藏状态随时间间隔衰减。与我们工作的关系：GRU-D 使用固定衰减函数，我们使用自适应时间带宽。
 
-```
-时间间隔 δ_t = 距上次观测的时间
-
-输入衰减：
-  x̃_t^i = x_t^i                    (如果 t 时刻有观测)
-  x̃_t^i = γ_x · x̃_{t-1}^i + (1-γ_x) · mean_i  (如果无观测)
-
-  γ_x = exp(-max(0, W_x δ_t + b_x))   [学习到的衰减率]
-
-隐藏状态衰减：
-  h_{t-1} = γ_h ⊙ h_{t-1} + (1-γ_h) ⊙ h_mean
-```
-
-**与我们工作的关系**：
-- GRU-D 使用**固定**的衰减函数，只基于时间间隔
-- 我们的方法使用**自适应**的时间带宽，基于患者状态和任务
-- 两者都认识到"时间信息很重要"，但我们更进一步：不仅建模数据缺失，还建模**临床相关性**
-
-**关键图**：GRU-D Cell 结构（待补充）
-
----
-
-## 论文2：RETAIN — 可解释的 EHR 预测模型
-
-**论文**：*RETAIN: An Interpretable Predictive Model for Healthcare using Reverse Time Attention*, NeurIPS 2016
-
-**核心思想**：用**逆时间顺序**的注意力机制，识别历史中哪些就诊记录对当前预测最重要。
-
-**两层注意力**：
-1. **就诊级注意力**：哪些历史就诊最相关？
-2. **事件级注意力**：每次就诊中哪些事件（诊断、操作、用药）最重要？
-
-```
-时间方向：◄──────────────────────────────────────
-          v_1    v_2    v_3    ...    v_T
-
-RETAIN 逆时间注意力：
-          从 v_T 开始，逐步回溯到 v_1
-          模拟临床推理：从最近开始，向前看
-```
-
-**与我们工作的关系**：
-- RETAIN 的注意力权重是**给定输入后固定的**
-- 我们的自适应核使这些权重**依赖患者状态和任务**
-- RETAIN 没有显式的时间衰减；我们通过学习 σ_t 来加权
-
-**关键图**：RETAIN 注意力可视化（待补充）
-
----
-
-## 论文3：LLM4EHR — 大语言模型用于临床预测
-
-**论文**：*Prompting Large Language Models for Zero-Shot Clinical Prediction with Structured Longitudinal Electronic Health Record Data*, 2024
-
-**核心问题**：能否用 LLM 直接处理 EHR 数据做零样本/少样本预测？
-
-**方法**：将结构化 EHR 转换为文本 prompt：
-
-```
-Patient Demographics: 65-year-old male
-Admission Diagnosis: Pneumonia
-Vital Signs:
-  - Hour 1: HR 85, BP 120/80, SpO2 95%
-  - Hour 2: HR 90, BP 118/78, SpO2 94%
-Lab Results:
-  - Hour 6: WBC 12.5, CRP 45
-Medications:
-  - Hour 4: Antibiotics started
-```
-
-**与我们工作的关系**：
-- LLM4EHR 把时间信息当作**文本**，不是**时间**
-- LLM 必须从文本中推断时间模式
-- 我们的方法**显式学习时间语义**：模型知道"看多远"
-- 潜在整合：自适应时间编码器 → LLM，让 LLM 基于时间感知的 embedding 做预测
-
-**关键图**：Prompt 模板结构（待补充）
-
----
-
-## 论文4：Transformer-based EHR Models
-
-**代表工作**：Med-BERT, BEHRT, G-BERT, EHR-Transformer
-
-**共同模式**：
-- 标准 Transformer + 位置编码 → EHR Transformer + 时间编码
-- 多头自注意力捕捉事件间依赖
-
-**共同局限**：
-- **固定位置编码**（正弦/学习得到，但不自适应）
-- **固定注意力模式**（对所有患者相同）
-- **固定时间粒度**
-
-**与我们工作的关系**：
-- 自适应时间核可以在事件进入 Transformer 之前**预过滤**
-- 使 Transformer 的注意力更高效、临床更有意义
-- 结合了 Transformer 全局建模 + 自适应时间局部建模
+**RETAIN**（NeurIPS 2016）：逆时间注意力机制，可解释 EHR 预测。两层注意力：就诊级 + 事件级。与我们工作的关系：RETAIN 注意力权重固定，我们的权重依赖患者状态和任务。
 
 ---
 
